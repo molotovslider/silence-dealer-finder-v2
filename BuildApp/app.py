@@ -29,6 +29,11 @@ def detect_system():
         return {"mode":"eco",    "threads":3,  "delay":1.0, "cpu":cpu, "ram":ram}
 
 def _ensure_deps():
+    # If running as a compiled PyInstaller EXE, all deps are already bundled
+    # Only check when running as a plain .py script
+    if getattr(sys, "frozen", False):
+        return  # running as EXE — deps already included by PyInstaller
+
     needed = []
     try: import selenium
     except ImportError: needed.append("selenium")
@@ -46,17 +51,17 @@ def _ensure_deps():
     if needed:
         try:
             root = tk.Tk(); root.withdraw()
-            from tkinter import messagebox
             messagebox.showinfo(
                 "Silence Dealer Finder — Installation",
-                f"Installation des modules requis :\n{chr(10).join(needed)}\n\nCela prend 30 secondes, l'app redémarre ensuite."
+                f"Installation des modules requis :\n{chr(10).join(needed)}"
+                f"\n\nCela prend 30 secondes, l'app redémarre ensuite."
             )
             root.destroy()
         except Exception:
             pass
         for pkg in needed:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "--quiet"])
-        # Restart app after install
+            subprocess.check_call([sys.executable, "-m", "pip", "install",
+                                   pkg, "--quiet"])
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
 _ensure_deps()
